@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/config"
+	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/database"
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/server"
 )
 
@@ -21,9 +22,15 @@ const shutdownTimeout = 10 * time.Second
 func main() {
 	cfg := config.Load()
 
+	db, err := database.NewPool(context.Background(), cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
 	gin.SetMode(cfg.GinMode)
 
-	router, err := server.New()
+	router, err := server.New(db)
 	if err != nil {
 		log.Fatalf("failed to configure server: %v", err)
 	}
