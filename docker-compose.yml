@@ -1,0 +1,24 @@
+services:
+    db:
+        image: postgres:18
+        ports:
+            - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER:-opsboard}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opsboard}
+            POSTGRES_DB: ${POSTGRES_DB:-opsboard}
+        volumes:
+            - postgres_data:/var/lib/postgresql
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "pg_isready -U ${POSTGRES_USER:-opsboard} -d ${POSTGRES_DB:-opsboard}",
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+            start_period: 5s
+
+volumes:
+    postgres_data:
