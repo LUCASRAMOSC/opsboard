@@ -1,15 +1,63 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/gin-gonic/gin"
+
+	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/config"
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/server"
 )
 
-func main() {
-	router := server.New()
+const shutdownTimeout = 10 * time.Second
 
-	if err := router.Run(":8080"); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+func main() {
+	cfg := config.Load()
+
+	gin.SetMode(cfg.GinMode)
+
+	router, err := server.New()
+	if err != nil {
+		log.Fatalf("failed to configure server: %v", err)
 	}
+
+	httpServer := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: router,
+	}
+
+	shutdownContext, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	go func() {
+		log.Printf("OpsBoard API listening on port %s", cfg.Port)
+
+		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("failed to start server: %v", err)
+		}
+	}()
+
+	<-shutdownContext.Done()
+
+	log.Println("shutting down OpsBoard API")
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Printf("server shutdown error: %v", err)
+	}
+
+	log.Println("OpsBoard API stopped")
 }

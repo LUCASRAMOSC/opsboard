@@ -6,11 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func New() *gin.Engine {
+func New() (*gin.Engine, error) {
 	router := gin.New()
 
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+
+	if err := router.SetTrustedProxies(nil); err != nil {
+		return nil, err
+	}
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -18,5 +22,5 @@ func New() *gin.Engine {
 		})
 	})
 
-	return router
+	return router, nil
 }
