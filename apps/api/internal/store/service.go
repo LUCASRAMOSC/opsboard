@@ -118,6 +118,10 @@ func (s *Store) ListServicesByWorkspace(
 	ctx context.Context,
 	workspaceID uuid.UUID,
 ) ([]domain.Service, error) {
+	if _, err := s.GetWorkspace(ctx, workspaceID); err != nil {
+		return nil, err
+	}
+
 	const query = `
 		SELECT
 			id,
