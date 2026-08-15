@@ -14,7 +14,9 @@ import (
 
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/config"
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/database"
+	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/handler"
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/server"
+	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/store"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -28,9 +30,17 @@ func main() {
 	}
 	defer db.Close()
 
+	dataStore := store.New(db)
+	workspaceHandler := handler.NewWorkspaceHandler(dataStore)
+	serviceHandler := handler.NewServiceHandler(dataStore)
+
 	gin.SetMode(cfg.GinMode)
 
-	router, err := server.New(db)
+	router, err := server.New(
+		db,
+		workspaceHandler,
+		serviceHandler,
+	)
 	if err != nil {
 		log.Fatalf("failed to configure server: %v", err)
 	}

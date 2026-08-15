@@ -5,9 +5,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/handler"
 )
 
-func New(db *pgxpool.Pool) (*gin.Engine, error) {
+func New(
+	db *pgxpool.Pool,
+	workspaceHandler *handler.WorkspaceHandler,
+	serviceHandler *handler.ServiceHandler,
+) (*gin.Engine, error) {
 	router := gin.New()
 
 	router.Use(gin.Logger())
@@ -36,6 +42,33 @@ func New(db *pgxpool.Pool) (*gin.Engine, error) {
 			"status": "ready",
 		})
 	})
+
+	router.POST(
+		"/workspaces",
+		workspaceHandler.Create,
+	)
+	router.GET(
+		"/workspaces",
+		workspaceHandler.List,
+	)
+	router.GET(
+		"/workspaces/:workspaceID",
+		workspaceHandler.Get,
+	)
+	router.POST(
+		"/workspaces/:workspaceID/services",
+		serviceHandler.Create,
+	)
+
+	router.GET(
+		"/workspaces/:workspaceID/services",
+		serviceHandler.ListByWorkspace,
+	)
+
+	router.GET(
+		"/services/:serviceID",
+		serviceHandler.Get,
+	)
 
 	return router, nil
 }
