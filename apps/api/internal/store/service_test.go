@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -124,5 +125,124 @@ func TestServiceStoreIntegration(t *testing.T) {
 
 	if !listed {
 		t.Error("created service was not returned by ListServicesByWorkspace")
+	}
+}
+
+func TestCreateServiceReturnsNotFoundForMissingWorkspace(t *testing.T) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("DATABASE_URL is not set")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	db, err := database.NewPool(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("connect to database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	store := New(db)
+
+	_, err = store.CreateService(
+		ctx,
+		uuid.New(),
+		"Payments API",
+		domain.ServiceTypeAPI,
+		domain.CriticalityHigh,
+	)
+
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("error = %v, want ErrNotFound", err)
+	}
+}
+
+func TestCreateServiceReturnsConflictForDuplicateName(t *testing.T) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("DATABASE_URL is not set")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	db, err := database.NewPool(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("connect to database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	store := New(db)
+
+	workspace, err := store.CreateWorkspace(
+		ctx,
+		"duplicate-service-"+uuid.NewString(),
+	)
+	if err != nil {
+		t.Fatalf("create workspace: %v", err)
+	}
+
+	t.Cleanup(func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(
+			context.Background(),
+			5*time.Second,
+		)
+		defer cleanupCancel()
+
+		if _, err := db.Exec(
+			cleanupCtx,
+			"DELETE FROM workspaces WHERE id = $1",
+			workspace.ID,
+		); err != nil {
+			t.Errorf("cleanup workspace: %v", err)
+		}
+	})
+
+	_, err = store.CreateService(
+		ctx,
+		workspace.ID,
+		"Payments API",
+		domain.ServiceTypeAPI,
+		domain.CriticalityHigh,
+	)
+	if err != nil {
+		t.Fatalf("create first service: %v", err)
+	}
+
+	_, err = store.CreateService(
+		ctx,
+		workspace.ID,
+		"Payments API",
+		domain.ServiceTypeAPI,
+		domain.CriticalityHigh,
+	)
+
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("error = %v, want ErrConflict", err)
+	}
+}
+
+func TestGetServiceReturnsNotFound(t *testing.T) {
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("DATABASE_URL is not set")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	db, err := database.NewPool(ctx, databaseURL)
+	if err != nil {
+		t.Fatalf("connect to database: %v", err)
+	}
+	t.Cleanup(db.Close)
+
+	store := New(db)
+
+	_, err = store.GetService(ctx, uuid.New())
+
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("error = %v, want ErrNotFound", err)
 	}
 }

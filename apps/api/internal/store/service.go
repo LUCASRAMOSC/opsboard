@@ -2,8 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/domain"
 )
@@ -51,7 +54,20 @@ func (s *Store) CreateService(
 		&service.CreatedAt,
 		&service.UpdatedAt,
 	)
+
 	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			switch pgErr.ConstraintName {
+			case "services_workspace_fk":
+				return domain.Service{}, ErrNotFound
+
+			case "services_workspace_name_unique":
+				return domain.Service{}, ErrConflict
+			}
+		}
+
 		return domain.Service{}, err
 	}
 
@@ -86,6 +102,11 @@ func (s *Store) GetService(
 		&service.CreatedAt,
 		&service.UpdatedAt,
 	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Service{}, ErrNotFound
+	}
+
 	if err != nil {
 		return domain.Service{}, err
 	}
