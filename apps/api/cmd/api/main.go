@@ -32,10 +32,15 @@ func main() {
 
 	dataStore := store.New(db)
 	workspaceHandler := handler.NewWorkspaceHandler(dataStore)
+	serviceHandler := handler.NewServiceHandler(dataStore)
 
 	gin.SetMode(cfg.GinMode)
 
-	router, err := server.New(db, workspaceHandler)
+	router, err := server.New(
+		db,
+		workspaceHandler,
+		serviceHandler,
+	)
 	if err != nil {
 		log.Fatalf("failed to configure server: %v", err)
 	}

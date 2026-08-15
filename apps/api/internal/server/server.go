@@ -12,6 +12,7 @@ import (
 func New(
 	db *pgxpool.Pool,
 	workspaceHandler *handler.WorkspaceHandler,
+	serviceHandler *handler.ServiceHandler,
 ) (*gin.Engine, error) {
 	router := gin.New()
 
@@ -42,9 +43,32 @@ func New(
 		})
 	})
 
-	router.POST("/workspaces", workspaceHandler.Create)
-	router.GET("/workspaces", workspaceHandler.List)
-	router.GET("/workspaces/:workspaceID", workspaceHandler.Get)
+	router.POST(
+		"/workspaces",
+		workspaceHandler.Create,
+	)
+	router.GET(
+		"/workspaces",
+		workspaceHandler.List,
+	)
+	router.GET(
+		"/workspaces/:workspaceID",
+		workspaceHandler.Get,
+	)
+	router.POST(
+		"/workspaces/:workspaceID/services",
+		serviceHandler.Create,
+	)
+
+	router.GET(
+		"/workspaces/:workspaceID/services",
+		serviceHandler.ListByWorkspace,
+	)
+
+	router.GET(
+		"/services/:serviceID",
+		serviceHandler.Get,
+	)
 
 	return router, nil
 }
