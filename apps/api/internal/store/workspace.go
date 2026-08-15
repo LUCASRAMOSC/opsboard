@@ -2,8 +2,10 @@ package store
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/LUCASRAMOSC/opsboard/apps/api/internal/domain"
 )
@@ -51,6 +53,11 @@ func (s *Store) GetWorkspace(
 		&workspace.CreatedAt,
 		&workspace.UpdatedAt,
 	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Workspace{}, ErrNotFound
+	}
+
 	if err != nil {
 		return domain.Workspace{}, err
 	}
