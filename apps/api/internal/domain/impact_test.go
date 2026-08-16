@@ -424,3 +424,67 @@ func TestImpactAnalysisIsDeterministic(t *testing.T) {
 		)
 	}
 }
+
+func TestClassifyImpactSeverityThresholds(t *testing.T) {
+	tests := []struct {
+		name  string
+		score int
+		want  ImpactSeverity
+	}{
+		{
+			name:  "zero is low",
+			score: 0,
+			want:  ImpactSeverityLow,
+		},
+		{
+			name:  "below medium threshold is low",
+			score: 39,
+			want:  ImpactSeverityLow,
+		},
+		{
+			name:  "medium threshold",
+			score: 40,
+			want:  ImpactSeverityMedium,
+		},
+		{
+			name:  "below high threshold is medium",
+			score: 59,
+			want:  ImpactSeverityMedium,
+		},
+		{
+			name:  "high threshold",
+			score: 60,
+			want:  ImpactSeverityHigh,
+		},
+		{
+			name:  "below critical threshold is high",
+			score: 79,
+			want:  ImpactSeverityHigh,
+		},
+		{
+			name:  "critical threshold",
+			score: 80,
+			want:  ImpactSeverityCritical,
+		},
+		{
+			name:  "maximum score is critical",
+			score: 100,
+			want:  ImpactSeverityCritical,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := classifyImpactSeverity(tt.score)
+
+			if got != tt.want {
+				t.Fatalf(
+					"severity for score %d = %q, want %q",
+					tt.score,
+					got,
+					tt.want,
+				)
+			}
+		})
+	}
+}
