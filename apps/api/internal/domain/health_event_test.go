@@ -92,3 +92,61 @@ func TestValidResponseTimeMs(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveCurrentServiceStatus(t *testing.T) {
+	tests := []struct {
+		name              string
+		latestHealthEvent *HealthEvent
+		want              CurrentServiceStatus
+	}{
+		{
+			name:              "no health events",
+			latestHealthEvent: nil,
+			want:              CurrentServiceStatusUnknown,
+		},
+		{
+			name: "healthy",
+			latestHealthEvent: &HealthEvent{
+				Status: HealthStatusHealthy,
+			},
+			want: CurrentServiceStatusHealthy,
+		},
+		{
+			name: "degraded",
+			latestHealthEvent: &HealthEvent{
+				Status: HealthStatusDegraded,
+			},
+			want: CurrentServiceStatusDegraded,
+		},
+		{
+			name: "unavailable",
+			latestHealthEvent: &HealthEvent{
+				Status: HealthStatusUnavailable,
+			},
+			want: CurrentServiceStatusUnavailable,
+		},
+		{
+			name: "invalid health event status",
+			latestHealthEvent: &HealthEvent{
+				Status: HealthStatus("INVALID"),
+			},
+			want: CurrentServiceStatusUnknown,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := DeriveCurrentServiceStatus(
+				test.latestHealthEvent,
+			)
+
+			if got != test.want {
+				t.Fatalf(
+					"DeriveCurrentServiceStatus() = %q, want %q",
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
