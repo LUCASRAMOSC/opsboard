@@ -33,6 +33,7 @@ func main() {
 	dataStore := store.New(db)
 	workspaceHandler := handler.NewWorkspaceHandler(dataStore)
 	serviceHandler := handler.NewServiceHandler(dataStore)
+	healthEventHandler := handler.NewHealthEventHandler(dataStore)
 
 	gin.SetMode(cfg.GinMode)
 
@@ -40,6 +41,7 @@ func main() {
 		db,
 		workspaceHandler,
 		serviceHandler,
+		healthEventHandler,
 	)
 	if err != nil {
 		log.Fatalf("failed to configure server: %v", err)

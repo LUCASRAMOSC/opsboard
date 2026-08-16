@@ -13,6 +13,7 @@ func New(
 	db *pgxpool.Pool,
 	workspaceHandler *handler.WorkspaceHandler,
 	serviceHandler *handler.ServiceHandler,
+	healthEventHandler *handler.HealthEventHandler,
 ) (*gin.Engine, error) {
 	router := gin.New()
 
@@ -68,6 +69,21 @@ func New(
 	router.GET(
 		"/services/:serviceID",
 		serviceHandler.Get,
+	)
+
+	router.POST(
+		"/services/:serviceID/health-events",
+		healthEventHandler.Create,
+	)
+
+	router.GET(
+		"/services/:serviceID/health-events",
+		healthEventHandler.ListByService,
+	)
+
+	router.GET(
+		"/services/:serviceID/health-events/latest",
+		healthEventHandler.Latest,
 	)
 
 	return router, nil
