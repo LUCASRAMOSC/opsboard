@@ -15,6 +15,7 @@ func New(
 	serviceHandler *handler.ServiceHandler,
 	healthEventHandler *handler.HealthEventHandler,
 	businessJourneyHandler *handler.BusinessJourneyHandler,
+	impactAnalysisHandler *handler.ImpactAnalysisHandler,
 ) (*gin.Engine, error) {
 	router := gin.New()
 
@@ -115,6 +116,11 @@ func New(
 	router.DELETE(
 		"/journeys/:journeyID/services/:serviceID",
 		businessJourneyHandler.RemoveService,
+	)
+
+	router.GET(
+		"/workspaces/:workspaceID/impact-analysis",
+		impactAnalysisHandler.Analyze,
 	)
 
 	return router, nil
