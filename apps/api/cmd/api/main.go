@@ -34,6 +34,7 @@ func main() {
 	workspaceHandler := handler.NewWorkspaceHandler(dataStore)
 	serviceHandler := handler.NewServiceHandler(dataStore)
 	healthEventHandler := handler.NewHealthEventHandler(dataStore)
+	businessJourneyHandler := handler.NewBusinessJourneyHandler(dataStore)
 
 	gin.SetMode(cfg.GinMode)
 
@@ -42,6 +43,7 @@ func main() {
 		workspaceHandler,
 		serviceHandler,
 		healthEventHandler,
+		businessJourneyHandler,
 	)
 	if err != nil {
 		log.Fatalf("failed to configure server: %v", err)

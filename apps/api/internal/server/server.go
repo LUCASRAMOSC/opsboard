@@ -14,6 +14,7 @@ func New(
 	workspaceHandler *handler.WorkspaceHandler,
 	serviceHandler *handler.ServiceHandler,
 	healthEventHandler *handler.HealthEventHandler,
+	businessJourneyHandler *handler.BusinessJourneyHandler,
 ) (*gin.Engine, error) {
 	router := gin.New()
 
@@ -84,6 +85,36 @@ func New(
 	router.GET(
 		"/services/:serviceID/health-events/latest",
 		healthEventHandler.Latest,
+	)
+
+	router.POST(
+		"/workspaces/:workspaceID/journeys",
+		businessJourneyHandler.Create,
+	)
+
+	router.GET(
+		"/workspaces/:workspaceID/journeys",
+		businessJourneyHandler.ListByWorkspace,
+	)
+
+	router.GET(
+		"/journeys/:journeyID",
+		businessJourneyHandler.Get,
+	)
+
+	router.POST(
+		"/journeys/:journeyID/services/:serviceID",
+		businessJourneyHandler.AddService,
+	)
+
+	router.GET(
+		"/journeys/:journeyID/services",
+		businessJourneyHandler.ListServices,
+	)
+
+	router.DELETE(
+		"/journeys/:journeyID/services/:serviceID",
+		businessJourneyHandler.RemoveService,
 	)
 
 	return router, nil
