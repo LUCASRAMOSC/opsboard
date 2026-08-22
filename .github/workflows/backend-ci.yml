@@ -1,0 +1,66 @@
+name: Backend CI
+
+on:
+    pull_request:
+        branches:
+            - main
+    push:
+        branches:
+            - main
+
+permissions:
+    contents: read
+
+jobs:
+    validate:
+        runs-on: ubuntu-latest
+
+        env:
+            DATABASE_URL: postgres://opsboard:opsboard@localhost:5432/opsboard?sslmode=disable
+
+        services:
+            postgres:
+                image: postgres:18
+                env:
+                    POSTGRES_USER: opsboard
+                    POSTGRES_PASSWORD: opsboard
+                    POSTGRES_DB: opsboard
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd "pg_isready -U opsboard -d opsboard"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v7
+
+            - name: Set up Go
+              uses: actions/setup-go@v7
+              with:
+                  go-version: '1.26.5'
+                  cache-dependency-path: apps/api/go.sum
+
+            - name: Create CI environment file
+              run: printf 'DATABASE_URL=%s\n' "$DATABASE_URL" > .env
+
+            - name: Run database migrations
+              run: make migrate-up
+
+            - name: Download Go dependencies
+              working-directory: apps/api
+              run: go mod download
+
+            - name: Run tests
+              working-directory: apps/api
+              run: go test ./...
+
+            - name: Run vet
+              working-directory: apps/api
+              run: go vet ./...
+
+            - name: Verify build
+              working-directory: apps/api
+              run: go build ./...
